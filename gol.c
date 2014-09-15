@@ -1,3 +1,8 @@
+//-----------------------------------------//
+//author: Daniele Barattieri di San Pietro
+//email: danielebarattieri@gmail.com
+//-----------------------------------------//
+
 #include <ncurses.h>
 #include <math.h>
 #include <time.h>
