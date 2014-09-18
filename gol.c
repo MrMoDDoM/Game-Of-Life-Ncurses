@@ -6,26 +6,48 @@
 #include <ncurses.h>
 #include <math.h>
 #include <time.h>
+#include <stdlib.h>
 
-#define MAX_ROW 90
-#define MAX_COL 25
+//DEFINE DEFAULT
+#define DEFAULT_MAX_ROW 90
+#define DEFAULT_MAX_COL 25
+
+#define DEFAULT_BG_COLOR 0
+#define DEFAULT_CL_COLOR 1
+
+#define DEFAULT_VIVA '@'
+#define DEFAULT_MORTA ' '
+
+#define DEFAULT_DELAY_MS 120
 
 //VARIABILI GLOBALI
-int row = MAX_ROW+2;
-int col = MAX_COL+2;
+int max_row;
+int max_col;
 
-int bg_color=0;
-int cl_color=1;
+//int row = max_row+2;
+//int col = max_col+2;
 
-char viva = '@';
-char morta = ' ';
+int row;
+int col;
 
-int delay_ms = 120; //millisecondi
+int bg_color;
+int cl_color;
 
-int grid[MAX_COL+2][MAX_ROW+2];
-int new_grid[MAX_COL+2][MAX_ROW+2];
+char viva;
+char morta;
+
+int delay_ms; //millisecondi
+
+//int grid[max_col+2][max_row+2];
+//int new_grid[max_col+2][max_row+2];
+
+int **grid;
+int **new_grid;
 
 //FUNZIONI PROGRAMMA
+int **alloc_grid(int nrows,int ncolumns); //Allocamento memoria per le grigle
+void init_var(int m_r, int m_c, int bg_c, int cl_c, char v, char m, int dl_ms); //Inizializza le variabili globali
+void print_usange(); //Stampa l'utilizzo del programma a riga di comando
 void initColorPair(); //Inizializza le coppie colori
 void wipe_grid(); //Ripulisce la griglia
 void make_glider(int x, int y); //Disegna un glider a partire da x,y
@@ -41,7 +63,17 @@ void change_bg_color(); //Cambia il colore delle cellule
 WINDOW *create_newwin(int height, int width, int starty, int startx);
 void destroy_win(WINDOW *local_win);
 
-int main(){
+int main(int argc, char *argv[]){
+
+	if(argc==1){  //Inizializza con i valori di defalut
+		init_var(DEFAULT_MAX_ROW,DEFAULT_MAX_COL,DEFAULT_BG_COLOR,DEFAULT_CL_COLOR,DEFAULT_VIVA,DEFAULT_MORTA,DEFAULT_DELAY_MS);
+	} else if (argc==3){
+		printf("\n\nDA IMPLEMENTARE\n\n");
+		return -1;
+	} else {
+		print_usange();
+		return -1;
+	}
 
 	//Box per le info
 	WINDOW *info=NULL;
@@ -142,7 +174,7 @@ int main(){
 		//Controllo e stampa della finestra info
 		if(info_visible){
 			if(info==NULL)
-				info=create_newwin(4,25,0,MAX_ROW+2);
+				info=create_newwin(4,25,0,max_row+2);
 
 			mvwprintw(info,1,1,"Ciclo n° %i",ciclo);
 			mvwprintw(info,2,1,"Delay: %i ms",delay_ms);
@@ -170,6 +202,69 @@ int main(){
 	//Termina la libreria ncurses
 	endwin();
 }
+
+void print_usange(){
+
+	printf("\n\n");
+	printf("\tUsange: ./gol [ROW] [COL]");
+	printf("\n\n");
+
+}
+
+int **alloc_grid(int nrows,int ncolumns){
+
+	int i;
+	int **array;
+
+	array = malloc(nrows * sizeof(int *));
+	if(array == NULL){
+		fprintf(stderr, "out of memory\n");
+		return NULL;
+	}
+
+	for(i = 0; i < nrows; i++){
+		array[i] = malloc(ncolumns * sizeof(int));
+		if(array[i] == NULL){
+			fprintf(stderr, "out of memory\n");
+			return NULL;
+		}
+	}
+
+	return array;
+
+}
+
+void init_var(int m_r, int m_c, int bg_c, int cl_c, char v, char m, int dl_ms){
+
+	if(m_r>0) max_row=m_r;
+	else max_row = DEFAULT_MAX_ROW;
+
+	if(m_c>0) max_col=m_c;
+	else max_col = DEFAULT_MAX_COL;
+
+       	   row=max_row+2;
+	   col=max_col+2;
+
+	   grid=alloc_grid(row,col);
+	   new_grid=alloc_grid(row,col);
+
+	if(bg_c>-1 && bg_c<8) bg_color = bg_c;
+	else bg_color=DEFAULT_BG_COLOR;
+
+	if(cl_c>-1 && cl_c<8) cl_color = cl_c;
+	else cl_color = DEFAULT_CL_COLOR;
+
+	if(v>=32 && v<=126) viva = v;
+	else viva = DEFAULT_VIVA;
+
+	if(m>=32 && m<=126) morta = m;
+	else morta = DEFAULT_MORTA;
+
+	if(dl_ms>0) delay_ms = dl_ms;
+	else delay_ms = DEFAULT_DELAY_MS;
+
+}
+
 
 WINDOW *create_newwin(int height, int width, int starty, int startx)
 {	WINDOW *local_win;
@@ -270,25 +365,25 @@ void fill_new_grid(){
 
 	int i=0;
 
-	for(i=1; i<=MAX_ROW; i++){
+	for(i=1; i<=max_row; i++){
 		//colonna sinistra in quella di destra
-		grid[MAX_COL+1][i]=grid[1][i];
+		grid[max_col+1][i]=grid[1][i];
 		//colonna destra in quella di sinistra
-		grid[0][i]=grid[MAX_COL][i];
+		grid[0][i]=grid[max_col][i];
 	}
 
-	for(i=1; i<=MAX_COL; i++){
+	for(i=1; i<=max_col; i++){
 		//riga superiore in quella inferiore
-		grid[i][MAX_ROW+1]=grid[i][1];
+		grid[i][max_row+1]=grid[i][1];
 		//riga inferiore in quella superiore
-		grid[i][0]=grid[i][MAX_ROW];
+		grid[i][0]=grid[i][max_row];
 	}
 
 	//i quattro angoli
-	grid[0][0]=grid[MAX_COL][MAX_ROW];//inferiore destro in quello superiore sinistro
-	grid[0][MAX_ROW+1]=grid[1][MAX_ROW];//inferiore sinistro in quello superiore destro
-	grid[MAX_COL+1][MAX_ROW+1]=grid[1][1];//superiore sinistro in quello inferiore destro
-	grid[MAX_COL][0]=grid[MAX_COL][1];//superiore destro in quello inferiore sinistro
+	grid[0][0]=grid[max_col][max_row];//inferiore destro in quello superiore sinistro
+	grid[0][max_row+1]=grid[1][max_row];//inferiore sinistro in quello superiore destro
+	grid[max_col+1][max_row+1]=grid[1][1];//superiore sinistro in quello inferiore destro
+	grid[max_col][0]=grid[max_col][1];//superiore destro in quello inferiore sinistro
 
 }
 
@@ -346,6 +441,10 @@ void draw_grid(){
 
 	attron(COLOR_PAIR(1));
 	attron(A_BOLD);
+
+	//Questi due cicli, per facilitare la scrittura del codice,
+	//partono da 1 e arrivano a col e row (col=max_col+2 & row=max_row+2) e partono da 1
+	//cosi' da non modificare l'accesso alla matrice, ma utilizzare variabili piu' facili
 
 	for(x=1; x<col-1; x++){
 		for(y=1; y<row-1; y++){
